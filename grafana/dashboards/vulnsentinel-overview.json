@@ -1,0 +1,813 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": 2,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "vulnsentinel-postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "value_and_name",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "vulnsentinel-postgres"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(DISTINCT asset_id) AS total_images_scanned\nFROM scans\nWHERE status = 'completed';",
+          "refId": "A"
+        }
+      ],
+      "title": "Total Images Scanned",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "vulnsentinel-postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "orange",
+                "value": 30
+              },
+              {
+                "color": "green",
+                "value": 60
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "value_and_name",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "vulnsentinel-postgres"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(*) AS raw_criticals\nFROM scan_results sr\nJOIN scans s ON s.id = sr.scan_id\nWHERE s.status = 'completed'\n  AND sr.raw_severity = 'Critical';",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "vulnsentinel-postgres"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(*) AS effective_criticals_open\nFROM scan_results sr\nJOIN scans s ON s.id = sr.scan_id\nWHERE s.status = 'completed'\n  AND sr.effective_severity = 'Critical'\n  AND sr.status = 'affected';",
+          "refId": "B"
+        }
+      ],
+      "title": "Alert Fatigue Reduction (Raw vs Effective Criticals)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "vulnsentinel-postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "displayLabels": ["name", "percent"],
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "pieType": "pie",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "sort": "desc",
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.3.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "vulnsentinel-postgres"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  CASE sr.status\n    WHEN 'affected' THEN 'open'\n    WHEN 'not_affected' THEN 'suppressed'\n    ELSE sr.status\n  END AS status,\n  COUNT(*) AS total\nFROM scan_results sr\nJOIN scans s ON s.id = sr.scan_id\nWHERE s.status = 'completed'\nGROUP BY 1\nORDER BY total DESC;",
+          "refId": "A"
+        }
+      ],
+      "title": "VEX Suppression Breakdown",
+      "type": "piechart"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "vulnsentinel-postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "footer": {
+              "reducers": []
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Is Exposed"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "false": {
+                        "color": "#299c46",
+                        "text": "False (Internal)"
+                      },
+                      "true": {
+                        "color": "#d44a3a",
+                        "text": "True (Exposed)"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Image Name"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "targetBlank": false,
+                    "title": "Filter dashboard to this image",
+                    "url": "/d/vulnsentinel-overview/vulnsentinel-risk-overview?var-image_name=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 8
+      },
+      "id": 4,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true
+      },
+      "pluginVersion": "12.3.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "vulnsentinel-postgres"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  a.image_name AS \"Image Name\",\n  SUBSTRING(a.image_digest, 1, 15) AS \"Digest\",\n  ls.context->>'environment' AS \"Environment\",\n  ls.context->>'is_exposed_public' AS \"Is Exposed\",\n  ls.finished_at AS \"Last Scanned\"\nFROM assets a\nJOIN LATERAL (\n  SELECT s.context, s.finished_at\n  FROM scans s\n  WHERE s.asset_id = a.id\n    AND s.status = 'completed'\n  ORDER BY s.finished_at DESC\n  LIMIT 1\n) ls ON true\nORDER BY ls.finished_at DESC;",
+          "refId": "A"
+        }
+      ],
+      "title": "Asset Context Table",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "vulnsentinel-postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 10,
+        "x": 0,
+        "y": 17
+      },
+      "id": 7,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.97,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "orientation": "auto",
+        "showValue": "auto",
+        "stacking": "none",
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "12.3.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "vulnsentinel-postgres"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  a.image_name AS image,\n  COUNT(*) FILTER (WHERE sr.status = 'affected') AS open,\n  COUNT(*) FILTER (WHERE sr.status = 'not_affected') AS suppressed\nFROM scan_results sr\nJOIN scans s ON s.id = sr.scan_id\nJOIN assets a ON a.id = s.asset_id\nWHERE s.status = 'completed'\nGROUP BY a.image_name\nORDER BY open DESC, suppressed DESC;",
+          "refId": "A"
+        }
+      ],
+      "title": "Open vs Suppressed By Image",
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "vulnsentinel-postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "footer": {
+              "reducers": []
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Status"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "open": {
+                        "color": "#d44a3a",
+                        "text": "Open"
+                      },
+                      "suppressed": {
+                        "color": "#299c46",
+                        "text": "Suppressed"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Vulnerability"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "targetBlank": true,
+                    "title": "Open in NVD",
+                    "url": "https://nvd.nist.gov/vuln/detail/${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 14,
+        "x": 10,
+        "y": 17
+      },
+      "id": 8,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true
+      },
+      "pluginVersion": "12.3.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "vulnsentinel-postgres"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  a.image_name AS \"Image\",\n  sr.vuln_id AS \"Vulnerability\",\n  sr.package_name AS \"Package\",\n  sr.package_version AS \"Version\",\n  sr.raw_severity AS \"Raw Severity\",\n  sr.effective_severity AS \"Effective Severity\",\n  CASE\n    WHEN sr.status = 'affected' THEN 'open'\n    WHEN sr.status = 'not_affected' THEN 'suppressed'\n    ELSE sr.status\n  END AS \"Status\",\n  sr.vex_justification AS \"VEX Justification\",\n  sr.fix_version AS \"Fix Version\",\n  sr.cvss_score AS \"CVSS\",\n  s.finished_at AS \"Scan Time\"\nFROM scan_results sr\nJOIN scans s ON s.id = sr.scan_id\nJOIN assets a ON a.id = s.asset_id\nWHERE s.status = 'completed'\n  AND ('${image_name}' = '__all' OR a.image_name = '${image_name}')\nORDER BY s.finished_at DESC, sr.cvss_score DESC NULLS LAST;",
+          "refId": "A"
+        }
+      ],
+      "title": "Selected Image Vulnerability Details",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "vulnsentinel-postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "footer": {
+              "reducers": []
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Severity"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "Critical": {
+                        "color": "#8b0000",
+                        "text": "Critical"
+                      },
+                      "High": {
+                        "color": "#ff8c00",
+                        "text": "High"
+                      },
+                      "Low": {
+                        "color": "#299c46",
+                        "text": "Low"
+                      },
+                      "Medium": {
+                        "color": "#eab839",
+                        "text": "Medium"
+                      },
+                      "Unknown": {
+                        "color": "#808080",
+                        "text": "Unknown"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Status"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "open": {
+                        "color": "#d44a3a",
+                        "text": "Open"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 27
+      },
+      "id": 5,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true
+      },
+      "pluginVersion": "12.3.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "vulnsentinel-postgres"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  a.image_name AS \"Affected Image\",\n  sr.vuln_id AS \"Vulnerability\",\n  sr.package_name AS \"Package\",\n  sr.package_version AS \"Current Version\",\n  sr.fix_version AS \"Available Fix\",\n  sr.effective_severity AS \"Severity\",\n  'open' AS \"Status\",\n  sr.cvss_score AS \"CVSS\"\nFROM scan_results sr\nJOIN scans s ON sr.scan_id = s.id\nJOIN assets a ON s.asset_id = a.id\nWHERE s.status = 'completed'\n  AND sr.status = 'affected'\n  AND ('${image_name}' = '__all' OR a.image_name = '${image_name}')\nORDER BY\n  CASE sr.effective_severity\n    WHEN 'Critical' THEN 1\n    WHEN 'High' THEN 2\n    WHEN 'Medium' THEN 3\n    WHEN 'Low' THEN 4\n    ELSE 5\n  END,\n  sr.cvss_score DESC NULLS LAST;",
+          "refId": "A"
+        }
+      ],
+      "title": "Actionable Risks Table",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "vulnsentinel-postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "footer": {
+              "reducers": []
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Status"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "suppressed": {
+                        "color": "#299c46",
+                        "text": "Suppressed"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 37
+      },
+      "id": 6,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true
+      },
+      "pluginVersion": "12.3.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "vulnsentinel-postgres"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  a.image_name AS \"Image\",\n  sr.vuln_id AS \"Vulnerability\",\n  sr.raw_severity AS \"Original Severity\",\n  sr.effective_severity AS \"Effective Severity\",\n  'suppressed' AS \"Status\",\n  sr.vex_justification AS \"VEX Justification\",\n  s.finished_at AS \"Scan Time\"\nFROM scan_results sr\nJOIN scans s ON sr.scan_id = s.id\nJOIN assets a ON s.asset_id = a.id\nWHERE s.status = 'completed'\n  AND sr.status = 'not_affected'\n  AND ('${image_name}' = '__all' OR a.image_name = '${image_name}')\nORDER BY s.finished_at DESC;",
+          "refId": "A"
+        }
+      ],
+      "title": "VEX Justification Log",
+      "type": "table"
+    }
+  ],
+  "preload": false,
+  "refresh": "30s",
+  "schemaVersion": 42,
+  "tags": ["vulnsentinel", "security", "vex"],
+  "templating": {
+    "list": [
+      {
+        "allValue": "__all",
+        "current": {
+          "text": "All",
+          "value": "__all"
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "vulnsentinel-postgres"
+        },
+        "definition": "SELECT DISTINCT a.image_name FROM assets a JOIN scans s ON s.asset_id = a.id WHERE s.status = 'completed' ORDER BY 1;",
+        "description": "Filter dashboard panels by selected image",
+        "includeAll": true,
+        "label": "Image",
+        "name": "image_name",
+        "options": [],
+        "query": "SELECT DISTINCT a.image_name FROM assets a JOIN scans s ON s.asset_id = a.id WHERE s.status = 'completed' ORDER BY 1;",
+        "refresh": 1,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "VulnSentinel Risk Overview",
+  "uid": "vulnsentinel-overview",
+  "version": 1
+}

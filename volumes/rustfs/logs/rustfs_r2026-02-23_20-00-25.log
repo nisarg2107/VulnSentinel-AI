@@ -1,0 +1,40 @@
+[2026-02-23 20:00:25.409466 +00:00] WARN [rustfs_scanner::scanner_folder] [crates/scanner/src/scanner_folder.rs:619] [rustfs-worker:ThreadId(33)] scan_folder: failed to get size for item /data/sboms/reports/sha256_341bf0f3ce6c5277d6002cf6e1fb0319fa4252add24ab6a0e262e0056d313208.scan-1.grype.json/ccb676bf-fe72-492e-a23d-0750d322bbfa/part.1: Io error: skip file
+
+[2026-02-23 20:00:25.424367 +00:00] WARN [rustfs_scanner::scanner_folder] [crates/scanner/src/scanner_folder.rs:619] [rustfs-worker:ThreadId(33)] scan_folder: failed to get size for item /data/sboms/reports/sha256_341bf0f3ce6c5277d6002cf6e1fb0319fa4252add24ab6a0e262e0056d313208.scan-2.grype.json/4dcfa8fb-8aa8-4df1-b6b9-53e465f507bb/part.1: Io error: skip file
+
+[2026-02-23 20:00:25.437654 +00:00] WARN [rustfs_scanner::scanner_folder] [crates/scanner/src/scanner_folder.rs:619] [rustfs-worker:ThreadId(33)] scan_folder: failed to get size for item /data/sboms/reports/sha256_341bf0f3ce6c5277d6002cf6e1fb0319fa4252add24ab6a0e262e0056d313208.scan-3.grype.json/58c4ea8d-339e-4309-8a84-1bf8fe846c45/part.1: Io error: skip file
+
+[2026-02-23 20:00:25.451285 +00:00] WARN [rustfs_scanner::scanner_folder] [crates/scanner/src/scanner_folder.rs:619] [rustfs-worker:ThreadId(33)] scan_folder: failed to get size for item /data/sboms/reports/sha256_341bf0f3ce6c5277d6002cf6e1fb0319fa4252add24ab6a0e262e0056d313208.scan-4.grype.json/89830309-a00c-43b7-ad6e-f413b2253f24/part.1: Io error: skip file
+
+[2026-02-23 20:00:25.464227 +00:00] WARN [rustfs_scanner::scanner_folder] [crates/scanner/src/scanner_folder.rs:619] [rustfs-worker:ThreadId(33)] scan_folder: failed to get size for item /data/sboms/sboms/sha256_341bf0f3ce6c5277d6002cf6e1fb0319fa4252add24ab6a0e262e0056d313208.syft.json/5c2993f8-01c8-45fa-99c1-4580c254a16e/part.1: Io error: skip file
+
+[2026-02-23 20:01:26.319462 +00:00] WARN [rustfs_scanner::scanner_folder] [crates/scanner/src/scanner_folder.rs:619] [rustfs-worker:ThreadId(18)] scan_folder: failed to get size for item /data/sboms/reports/sha256_341bf0f3ce6c5277d6002cf6e1fb0319fa4252add24ab6a0e262e0056d313208.scan-1.grype.json/ccb676bf-fe72-492e-a23d-0750d322bbfa/part.1: Io error: skip file
+
+[2026-02-23 20:01:26.326432 +00:00] WARN [rustfs_scanner::scanner_folder] [crates/scanner/src/scanner_folder.rs:619] [rustfs-worker:ThreadId(18)] scan_folder: failed to get size for item /data/sboms/reports/sha256_341bf0f3ce6c5277d6002cf6e1fb0319fa4252add24ab6a0e262e0056d313208.scan-2.grype.json/4dcfa8fb-8aa8-4df1-b6b9-53e465f507bb/part.1: Io error: skip file
+
+[2026-02-23 20:01:26.333354 +00:00] WARN [rustfs_scanner::scanner_folder] [crates/scanner/src/scanner_folder.rs:619] [rustfs-worker:ThreadId(18)] scan_folder: failed to get size for item /data/sboms/reports/sha256_341bf0f3ce6c5277d6002cf6e1fb0319fa4252add24ab6a0e262e0056d313208.scan-3.grype.json/58c4ea8d-339e-4309-8a84-1bf8fe846c45/part.1: Io error: skip file
+
+[2026-02-23 20:01:26.339570 +00:00] WARN [rustfs_scanner::scanner_folder] [crates/scanner/src/scanner_folder.rs:619] [rustfs-worker:ThreadId(18)] scan_folder: failed to get size for item /data/sboms/reports/sha256_341bf0f3ce6c5277d6002cf6e1fb0319fa4252add24ab6a0e262e0056d313208.scan-4.grype.json/89830309-a00c-43b7-ad6e-f413b2253f24/part.1: Io error: skip file
+
+[2026-02-23 20:01:26.350781 +00:00] WARN [rustfs_scanner::scanner_folder] [crates/scanner/src/scanner_folder.rs:619] [rustfs-worker:ThreadId(18)] scan_folder: failed to get size for item /data/sboms/sboms/sha256_341bf0f3ce6c5277d6002cf6e1fb0319fa4252add24ab6a0e262e0056d313208.syft.json/5c2993f8-01c8-45fa-99c1-4580c254a16e/part.1: Io error: skip file
+
+[2026-02-23 20:02:26.955174 +00:00] WARN [rustfs_scanner::scanner_folder] [crates/scanner/src/scanner_folder.rs:619] [rustfs-worker:ThreadId(32)] scan_folder: failed to get size for item /data/sboms/reports/sha256_341bf0f3ce6c5277d6002cf6e1fb0319fa4252add24ab6a0e262e0056d313208.scan-1.grype.json/ccb676bf-fe72-492e-a23d-0750d322bbfa/part.1: Io error: skip file
+
+[2026-02-23 20:02:26.964145 +00:00] WARN [rustfs_scanner::scanner_folder] [crates/scanner/src/scanner_folder.rs:619] [rustfs-worker:ThreadId(32)] scan_folder: failed to get size for item /data/sboms/reports/sha256_341bf0f3ce6c5277d6002cf6e1fb0319fa4252add24ab6a0e262e0056d313208.scan-2.grype.json/4dcfa8fb-8aa8-4df1-b6b9-53e465f507bb/part.1: Io error: skip file
+
+[2026-02-23 20:02:26.972892 +00:00] WARN [rustfs_scanner::scanner_folder] [crates/scanner/src/scanner_folder.rs:619] [rustfs-worker:ThreadId(32)] scan_folder: failed to get size for item /data/sboms/reports/sha256_341bf0f3ce6c5277d6002cf6e1fb0319fa4252add24ab6a0e262e0056d313208.scan-3.grype.json/58c4ea8d-339e-4309-8a84-1bf8fe846c45/part.1: Io error: skip file
+
+[2026-02-23 20:02:26.983093 +00:00] WARN [rustfs_scanner::scanner_folder] [crates/scanner/src/scanner_folder.rs:619] [rustfs-worker:ThreadId(32)] scan_folder: failed to get size for item /data/sboms/reports/sha256_341bf0f3ce6c5277d6002cf6e1fb0319fa4252add24ab6a0e262e0056d313208.scan-4.grype.json/89830309-a00c-43b7-ad6e-f413b2253f24/part.1: Io error: skip file
+
+[2026-02-23 20:02:26.993240 +00:00] WARN [rustfs_scanner::scanner_folder] [crates/scanner/src/scanner_folder.rs:619] [rustfs-worker:ThreadId(32)] scan_folder: failed to get size for item /data/sboms/sboms/sha256_341bf0f3ce6c5277d6002cf6e1fb0319fa4252add24ab6a0e262e0056d313208.syft.json/5c2993f8-01c8-45fa-99c1-4580c254a16e/part.1: Io error: skip file
+
+[2026-02-23 20:03:27.684198 +00:00] WARN [rustfs_scanner::scanner_folder] [crates/scanner/src/scanner_folder.rs:619] [rustfs-worker:ThreadId(18)] scan_folder: failed to get size for item /data/sboms/reports/sha256_341bf0f3ce6c5277d6002cf6e1fb0319fa4252add24ab6a0e262e0056d313208.scan-1.grype.json/ccb676bf-fe72-492e-a23d-0750d322bbfa/part.1: Io error: skip file
+
+[2026-02-23 20:03:27.696914 +00:00] WARN [rustfs_scanner::scanner_folder] [crates/scanner/src/scanner_folder.rs:619] [rustfs-worker:ThreadId(18)] scan_folder: failed to get size for item /data/sboms/reports/sha256_341bf0f3ce6c5277d6002cf6e1fb0319fa4252add24ab6a0e262e0056d313208.scan-2.grype.json/4dcfa8fb-8aa8-4df1-b6b9-53e465f507bb/part.1: Io error: skip file
+
+[2026-02-23 20:03:27.708021 +00:00] WARN [rustfs_scanner::scanner_folder] [crates/scanner/src/scanner_folder.rs:619] [rustfs-worker:ThreadId(18)] scan_folder: failed to get size for item /data/sboms/reports/sha256_341bf0f3ce6c5277d6002cf6e1fb0319fa4252add24ab6a0e262e0056d313208.scan-3.grype.json/58c4ea8d-339e-4309-8a84-1bf8fe846c45/part.1: Io error: skip file
+
+[2026-02-23 20:03:27.718608 +00:00] WARN [rustfs_scanner::scanner_folder] [crates/scanner/src/scanner_folder.rs:619] [rustfs-worker:ThreadId(18)] scan_folder: failed to get size for item /data/sboms/reports/sha256_341bf0f3ce6c5277d6002cf6e1fb0319fa4252add24ab6a0e262e0056d313208.scan-4.grype.json/89830309-a00c-43b7-ad6e-f413b2253f24/part.1: Io error: skip file
+
+[2026-02-23 20:03:27.740220 +00:00] WARN [rustfs_scanner::scanner_folder] [crates/scanner/src/scanner_folder.rs:619] [rustfs-worker:ThreadId(18)] scan_folder: failed to get size for item /data/sboms/sboms/sha256_341bf0f3ce6c5277d6002cf6e1fb0319fa4252add24ab6a0e262e0056d313208.syft.json/5c2993f8-01c8-45fa-99c1-4580c254a16e/part.1: Io error: skip file
+
