@@ -20,7 +20,7 @@ WORKDIR /app
 COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
-COPY worker.py /app/worker.py
+COPY . /app
 
 ENV RABBITMQ_HOST=host.docker.internal \
     RABBITMQ_PORT=5672 \
@@ -41,4 +41,5 @@ ENV RABBITMQ_HOST=host.docker.internal \
     RUSTFS_AUTO_CREATE_BUCKET=true \
     LOG_LEVEL=INFO
 
-CMD ["python", "/app/worker.py"]
+CMD ["sh", "-c", "alembic upgrade head && python /app/orchestrator.py"]
+

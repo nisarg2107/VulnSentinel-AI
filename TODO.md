@@ -4,9 +4,10 @@
 
 - [x] Verify local PostgreSQL + RabbitMQ + RustFS are running.
 - [x] Pivot architecture from Kubernetes MVP to plain Docker containers.
-- [x] Create and apply `init.sql` schema (`assets`, `scans`, `scan_results`).
+- [x] Create initial schema (`init.sql`) and baseline migration flow.
 - [x] Implement `emitter/emitter.py` and `emitter/Dockerfile`.
-- [x] Implement `worker/worker.py` and `worker/Dockerfile`.
+- [x] Implement readable flat worker modules in `worker/` with `orchestrator.py` as entrypoint and `worker/Dockerfile`.
+- [x] Adopt SQLAlchemy 2.0 persistence layer and Alembic migration scaffolding.
 - [x] Implement SBOM caching in RustFS (cache miss -> Syft, cache hit -> reuse).
 - [x] Implement Grype scan wrapper and parse findings.
 - [x] Implement context-aware VEX rule (critical + not exposed => downgraded and suppressed).
@@ -25,3 +26,4 @@
 - [ ] Worker ACK/NACK safety and reconnect loop for broker disconnects.
 - [ ] Artifact integrity checker and repair policy (DB object keys vs RustFS objects).
 - [ ] Emitter digest strictness (require explicit digest or resolve from Docker inspect).
+

@@ -6,8 +6,10 @@ VulnSentinel AI is a local-only, enterprise-grade vulnerability management pipel
 
 - **Phase:** MVP Core Complete / Hardening + Frontend Pending
 - **Infrastructure:** Native Host OS Installations (PostgreSQL, RabbitMQ) + RustFS in Docker
+- **Alternative Infra Path:** Standalone Docker Compose files for PostgreSQL and RabbitMQ are available in repo root.
 - **Compute:** Plain Docker containers (No Kubernetes for MVP)
 - **Backend:** Worker + emitter implemented and verified in happy flow
+- **Worker Codebase:** Flat, readable layout in `worker/` with `orchestrator.py` as the startup entrypoint and split infra/syft/grype/vex/db modules.
 - **Data Model:** `assets`, `scans`, and `scan_results` in Postgres with OpenVEX-aligned statuses
 - **Observability:** Grafana provisioning and baseline dashboard JSON committed
 
@@ -15,9 +17,11 @@ VulnSentinel AI is a local-only, enterprise-grade vulnerability management pipel
 
 - **Compute Orchestration:** Plain Docker (1-2 Dockerfiles for testing the flow)
 - **Queue:** RabbitMQ (Running natively on Host OS)
+- **Queue (Alternative):** RabbitMQ via `docker-compose.rabbitmq.yml`
 - **Storage:** RustFS for SBOM JSONs + PostgreSQL 15 for Risk Relationships
+- **Storage (Alternative):** PostgreSQL via `docker-compose.postgres.yml`
 - **Scanning:** Syft (Generate SBOM) + Grype (Scan SBOM) + Vunnel (DB Sync)
-- **Backend:** Python
+- **Backend:** Python (modular worker) + SQLAlchemy 2.0 + Alembic
 - **Frontend:** Next.js 14 (Pending)
 
 ## Key Decisions
@@ -25,6 +29,7 @@ VulnSentinel AI is a local-only, enterprise-grade vulnerability management pipel
 - **Dropped Kubernetes for MVP:** To validate the "happy flow" quickly, we are using simple Docker containers instead of a full Kubernetes cluster.
 - **Simulated Context:** Since we are not running Kubernetes, the "Context Collector" is now a Python script that injects mock infrastructure data (e.g., `exposed: true`) into RabbitMQ to test the VEX decision engine.
 - **Local-Only Infrastructure:** PostgreSQL and RabbitMQ run on host OS, while RustFS runs in Docker.
+- **Local-Only Infrastructure (Alternative):** PostgreSQL and RabbitMQ can also run in Docker via standalone compose files.
 - **Networking Rule:** Dockerized workers must connect to native services using the host machine's IP (e.g., `host.docker.internal`).
 - **Deferred Hardening:** Reliability/correctness hardening is intentionally postponed until end of project; tracked in `docs/deferred-hardening.md`.
 
@@ -33,3 +38,4 @@ VulnSentinel AI is a local-only, enterprise-grade vulnerability management pipel
 1. Continue validating repeated happy-flow runs with different images and contexts.
 2. Build the frontend (Next.js + shadcn) for actionable risk views.
 3. Final project phase: implement deferred hardening backlog from `docs/deferred-hardening.md`.
+

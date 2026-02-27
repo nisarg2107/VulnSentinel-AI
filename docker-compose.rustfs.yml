@@ -13,4 +13,7 @@ services:
     command: ["/data"]
     volumes:
       - ./volumes/rustfs/data:/data
-      - ./volumes/rustfs/logs:/logs
+      - rustfs_logs:/logs
+
+volumes:
+  rustfs_logs:

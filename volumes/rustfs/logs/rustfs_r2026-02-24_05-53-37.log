@@ -1,2 +1,0 @@
-[2026-02-24 05:53:37.049627 +00:00] WARN [rustfs_iam::store::object] [crates/iam/src/store/object.rs:518] [rustfs-worker:ThreadId(29)] load_user_identity failed: user is expired, delete the user and mapped policy, name: 8D61VSE5UJOSAZ28Q217, user_type: Sts
-
