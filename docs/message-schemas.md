@@ -33,7 +33,7 @@
 - `id` (PK)
 - `asset_id` (FK -> `assets.id`)
 - `job_id` (UUID, unique when present)
-- `status` (`queued | running | completed | failed | cancelled`)
+- `status` (`queued | running | completed | failed | cancelled | repair_required`)
 - `started_at`, `finished_at`, `created_at`
 - `error`
 - `context` (JSONB runtime snapshot from queue payload)

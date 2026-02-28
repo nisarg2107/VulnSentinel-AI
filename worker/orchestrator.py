@@ -2,22 +2,27 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import logging
 import os
+import time
 import uuid
 from pathlib import Path
 from typing import Any
 
 import pika
 
+from artifact_integrity import run_artifact_integrity_pass
 from db import Database
-from grype_logic import detect_grype_version, report_key_for_scan, run_grype_report, write_sbom_temp_file
-from infra import Postgres, RabbitMQ, RustFS
-from syft_logic import detect_syft_version, run_syft_sbom, sbom_key_for_digest
+from grype_logic import report_key_for_scan, run_grype_report, write_sbom_temp_file
+from infra import Postgres, RabbitMQ, RustFS, parse_bool_env, parse_int_env
+from syft_logic import run_syft_sbom, sbom_key_for_digest
 from vex_logic import extract_findings
+from worker_helpers import detect_tool_versions, image_name_from_ref, safe_ack, safe_nack
 
 
+# Configure root logging using LOG_LEVEL.
 def configure_logging() -> None:
     logging.basicConfig(
         level=os.getenv("LOG_LEVEL", "INFO").upper(),
@@ -25,27 +30,7 @@ def configure_logging() -> None:
     )
 
 
-def image_name_from_ref(image_ref: str) -> str:
-    if "@sha256:" in image_ref:
-        return image_ref.split("@", 1)[0]
-    return image_ref
-
-
-def detect_tool_versions() -> dict[str, str]:
-    versions: dict[str, str] = {}
-    try:
-        versions["syft"] = detect_syft_version()
-    except Exception as exc:  # pragma: no cover
-        versions["syft"] = f"error: {exc}"
-
-    try:
-        versions["grype"] = detect_grype_version()
-    except Exception as exc:  # pragma: no cover
-        versions["grype"] = f"error: {exc}"
-
-    return versions
-
-
+# Process one queue message end-to-end and persist scan results.
 def process_message(body: bytes, postgres: Postgres, rustfs: RustFS, tool_versions: dict[str, str]) -> None:
     payload = json.loads(body.decode("utf-8"))
     image_ref = str(payload["image_ref"])
@@ -128,13 +113,11 @@ def process_message(body: bytes, postgres: Postgres, rustfs: RustFS, tool_versio
         db.close()
 
 
-def run_worker(rabbitmq: RabbitMQ, postgres: Postgres, rustfs: RustFS) -> None:
-    tool_versions = detect_tool_versions()
-    connection = rabbitmq.connect()
-    channel = connection.channel()
-    channel.queue_declare(queue=rabbitmq.queue, durable=True)
-    channel.basic_qos(prefetch_count=rabbitmq.prefetch)
+# Consume queue messages forever with reconnect/backoff behavior.
+def run_worker(rabbitmq: RabbitMQ, postgres: Postgres, rustfs: RustFS, tool_versions: dict[str, str]) -> None:
+    reconnect_delay = rabbitmq.reconnect_initial_delay_seconds
 
+    # Handle and ACK/NACK one delivery.
     def callback(
         ch: pika.adapters.blocking_connection.BlockingChannel,
         method: Any,
@@ -144,27 +127,119 @@ def run_worker(rabbitmq: RabbitMQ, postgres: Postgres, rustfs: RustFS) -> None:
         delivery_tag = method.delivery_tag
         try:
             process_message(body=body, postgres=postgres, rustfs=rustfs, tool_versions=tool_versions)
-            ch.basic_ack(delivery_tag=delivery_tag)
+            safe_ack(ch, delivery_tag=delivery_tag)
         except Exception:
             logging.exception("Message processing failed")
-            ch.basic_nack(delivery_tag=delivery_tag, requeue=rabbitmq.requeue_on_error)
+            safe_nack(ch, delivery_tag=delivery_tag, requeue=rabbitmq.requeue_on_error)
 
-    logging.info("Worker started. queue=%s", rabbitmq.queue)
-    channel.basic_consume(queue=rabbitmq.queue, on_message_callback=callback)
-    channel.start_consuming()
+    while True:
+        connection: pika.BlockingConnection | None = None
+        channel: pika.adapters.blocking_connection.BlockingChannel | None = None
+        try:
+            connection = rabbitmq.connect()
+            channel = connection.channel()
+            channel.queue_declare(queue=rabbitmq.queue, durable=True)
+            channel.basic_qos(prefetch_count=rabbitmq.prefetch)
+            channel.basic_consume(queue=rabbitmq.queue, on_message_callback=callback)
+
+            reconnect_delay = rabbitmq.reconnect_initial_delay_seconds
+            logging.info(
+                "Worker started. queue=%s prefetch=%s",
+                rabbitmq.queue,
+                rabbitmq.prefetch,
+            )
+            channel.start_consuming()
+            logging.warning("RabbitMQ consuming stopped, reconnecting")
+        except KeyboardInterrupt:
+            logging.info("Worker interrupted; shutting down")
+            return
+        except pika.exceptions.AMQPError:
+            logging.exception("RabbitMQ error; reconnecting in %ss", reconnect_delay)
+        except Exception:
+            logging.exception("Unexpected worker loop error; reconnecting in %ss", reconnect_delay)
+        finally:
+            if channel is not None and channel.is_open:
+                try:
+                    channel.close()
+                except Exception:
+                    logging.debug("Failed to close channel cleanly", exc_info=True)
+            if connection is not None and connection.is_open:
+                try:
+                    connection.close()
+                except Exception:
+                    logging.debug("Failed to close connection cleanly", exc_info=True)
+
+        time.sleep(reconnect_delay)
+        reconnect_delay = min(
+            reconnect_delay * 2,
+            rabbitmq.reconnect_max_delay_seconds,
+        )
 
 
+# Build CLI flags for integrity-check modes.
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="VulnSentinel worker")
+    parser.add_argument(
+        "--artifact-integrity-check",
+        action="store_true",
+        help="Run one artifact integrity validation/repair pass before consuming.",
+    )
+    parser.add_argument(
+        "--artifact-integrity-check-only",
+        action="store_true",
+        help="Run one artifact integrity validation/repair pass and exit.",
+    )
+    parser.add_argument(
+        "--artifact-integrity-limit",
+        type=int,
+        default=parse_int_env("ARTIFACT_INTEGRITY_LIMIT", 200, minimum=1),
+        help="Maximum number of scans checked per integrity pass.",
+    )
+    return parser
 
-def run() -> int:
+
+# Entry point that optionally runs integrity checks before consuming.
+def run(argv: list[str] | None = None) -> int:
     configure_logging()
+    args = build_parser().parse_args(argv)
+
+    rabbitmq = RabbitMQ.from_env()
+    postgres = Postgres.from_env()
+    rustfs = RustFS.from_env()
+    tool_versions = detect_tool_versions()
+
+    run_integrity_check = (
+        args.artifact_integrity_check
+        or args.artifact_integrity_check_only
+        or parse_bool_env("ARTIFACT_INTEGRITY_CHECK_ON_START", False)
+    )
+
+    integrity_summary: dict[str, int] | None = None
+    if run_integrity_check:
+        try:
+            integrity_summary = run_artifact_integrity_pass(
+                postgres=postgres,
+                rustfs=rustfs,
+                tool_versions=tool_versions,
+                limit=max(1, args.artifact_integrity_limit),
+            )
+        except Exception:
+            logging.exception("Artifact integrity pass failed")
+            if args.artifact_integrity_check_only:
+                return 1
+
+    if args.artifact_integrity_check_only:
+        unresolved = 0 if integrity_summary is None else integrity_summary["repair_required"]
+        return 1 if unresolved > 0 else 0
+
     run_worker(
-        rabbitmq=RabbitMQ.from_env(),
-        postgres=Postgres.from_env(),
-        rustfs=RustFS.from_env(),
+        rabbitmq=rabbitmq,
+        postgres=postgres,
+        rustfs=rustfs,
+        tool_versions=tool_versions,
     )
     return 0
 
 
 if __name__ == "__main__":
     raise SystemExit(run())
-

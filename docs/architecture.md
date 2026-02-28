@@ -52,11 +52,11 @@
 - **Alembic File Guide:** `docs/alembic.md` explains what each Alembic file does.
 - **Runtime Data Policy:** `volumes/` contains local runtime state for Grafana and RustFS and is excluded from Git; only source configs and dashboard definitions are version-controlled.
 
-## Deferred Hardening (End Of Project)
+## Deferred Hardening (Implemented)
 
-The following are intentionally deferred and tracked in `docs/deferred-hardening.md`:
+End-of-project hardening tracked in `docs/deferred-hardening.md` is now implemented:
 
 - Worker ACK/NACK safety with reconnect loop on broker disconnect.
-- Artifact integrity checker between Postgres object keys and RustFS objects, plus repair policy.
+- Artifact integrity check/repair pass between Postgres object keys and RustFS objects.
 - Strict emitter digest behavior (explicit digest or Docker-resolved digest only).
 

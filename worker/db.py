@@ -7,7 +7,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import BigInteger, DateTime, ForeignKey, Numeric, func, text, update
+from sqlalchemy import BigInteger, DateTime, ForeignKey, Numeric, func, select, text, update
 from sqlalchemy.dialects.postgresql import JSONB, UUID, insert
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
@@ -85,6 +85,7 @@ class ScanResult(Base):
 class Database:
     _session_factory: sessionmaker[Session] | None = None
 
+    # Initialize or reuse the shared SQLAlchemy session factory.
     def __init__(self, postgres: Postgres) -> None:
         if Database._session_factory is None:
             Database._session_factory = sessionmaker(
@@ -95,15 +96,19 @@ class Database:
             )
         self.session = Database._session_factory()
 
+    # Commit current transaction.
     def commit(self) -> None:
         self.session.commit()
 
+    # Roll back current transaction.
     def rollback(self) -> None:
         self.session.rollback()
 
+    # Close active session.
     def close(self) -> None:
         self.session.close()
 
+    # Insert or update an asset keyed by immutable digest.
     def upsert_asset(self, image_digest: str, image_name: str) -> int:
         stmt = (
             insert(Asset)
@@ -116,6 +121,7 @@ class Database:
         )
         return int(self.session.execute(stmt).scalar_one())
 
+    # Create a new running scan row for an asset.
     def insert_scan(
         self,
         asset_id: int,
@@ -136,6 +142,7 @@ class Database:
         )
         return int(self.session.execute(stmt).scalar_one())
 
+    # Mark a scan completed and persist artifact pointers and checksums.
     def complete_scan(
         self,
         scan_id: int,
@@ -163,6 +170,36 @@ class Database:
         )
         self.session.execute(stmt)
 
+    # Mark a repaired scan completed and update only repaired fields.
+    def complete_scan_repair(
+        self,
+        scan_id: int,
+        tool_versions: dict[str, Any],
+        sbom_key: str | None = None,
+        sbom_data: bytes | None = None,
+        report_key: str | None = None,
+        report_data: bytes | None = None,
+    ) -> None:
+        values: dict[str, Any] = {
+            "status": "completed",
+            "tool_versions": tool_versions,
+            "error": None,
+        }
+        if sbom_key is not None:
+            values["sbom_object_key"] = sbom_key
+        if sbom_data is not None:
+            values["sbom_sha256"] = self.sha256_hex(sbom_data)
+            values["sbom_bytes"] = len(sbom_data)
+        if report_key is not None:
+            values["report_object_key"] = report_key
+        if report_data is not None:
+            values["report_sha256"] = self.sha256_hex(report_data)
+            values["report_bytes"] = len(report_data)
+
+        stmt = update(Scan).where(Scan.id == scan_id).values(**values)
+        self.session.execute(stmt)
+
+    # Mark a scan failed with a bounded error string.
     def fail_scan(self, scan_id: int, error: str) -> None:
         stmt = (
             update(Scan)
@@ -175,6 +212,19 @@ class Database:
         )
         self.session.execute(stmt)
 
+    # Mark a scan as requiring manual or later repair.
+    def mark_scan_repair_required(self, scan_id: int, error: str) -> None:
+        stmt = (
+            update(Scan)
+            .where(Scan.id == scan_id)
+            .values(
+                status="repair_required",
+                error=error[:4000],
+            )
+        )
+        self.session.execute(stmt)
+
+    # Bulk insert findings for one scan with dedupe via ON CONFLICT DO NOTHING.
     def insert_findings(self, scan_id: int, findings: list[dict[str, Any]]) -> None:
         if not findings:
             return
@@ -201,6 +251,36 @@ class Database:
         stmt = insert(ScanResult).values(rows).on_conflict_do_nothing()
         self.session.execute(stmt)
 
+    # Fetch recent scans that are eligible for artifact integrity validation.
+    def fetch_integrity_candidates(self, limit: int) -> list[dict[str, Any]]:
+        stmt = (
+            select(
+                Scan.id,
+                Scan.status,
+                Asset.image_name,
+                Asset.image_digest,
+                Scan.sbom_object_key,
+                Scan.report_object_key,
+            )
+            .join(Asset, Asset.id == Scan.asset_id)
+            .where(Scan.status.in_(["completed", "repair_required"]))
+            .order_by(Scan.id.desc())
+            .limit(limit)
+        )
+        rows = self.session.execute(stmt).all()
+        return [
+            {
+                "scan_id": int(row.id),
+                "status": str(row.status),
+                "image_name": str(row.image_name),
+                "image_digest": str(row.image_digest),
+                "sbom_object_key": str(row.sbom_object_key) if row.sbom_object_key else None,
+                "report_object_key": str(row.report_object_key) if row.report_object_key else None,
+            }
+            for row in rows
+        ]
+
+    # Compute SHA-256 hex digest for blob metadata fields.
     @staticmethod
     def sha256_hex(data: bytes) -> str:
         return hashlib.sha256(data).hexdigest()

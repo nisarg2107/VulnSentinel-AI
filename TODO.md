@@ -22,8 +22,8 @@
 
 ## Deferred Until End Of Project
 
-- [ ] Implement deferred hardening backlog in [docs/deferred-hardening.md](docs/deferred-hardening.md):
-- [ ] Worker ACK/NACK safety and reconnect loop for broker disconnects.
-- [ ] Artifact integrity checker and repair policy (DB object keys vs RustFS objects).
-- [ ] Emitter digest strictness (require explicit digest or resolve from Docker inspect).
+- [x] Implement deferred hardening backlog in [docs/deferred-hardening.md](docs/deferred-hardening.md):
+- [x] Worker ACK/NACK safety and reconnect loop for broker disconnects.
+- [x] Artifact integrity checker and repair policy (DB object keys vs RustFS objects).
+- [x] Emitter digest strictness (require explicit digest or resolve from Docker inspect).
 

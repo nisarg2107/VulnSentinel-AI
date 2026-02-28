@@ -13,6 +13,7 @@ from botocore.exceptions import ClientError
 from sqlalchemy import URL, Engine, create_engine
 
 
+# Parse flexible boolean env values with a fallback default.
 def parse_bool_env(name: str, default: bool) -> bool:
     raw = os.getenv(name)
     if raw is None:
@@ -20,6 +21,19 @@ def parse_bool_env(name: str, default: bool) -> bool:
     return raw.strip().lower() in {"1", "true", "yes", "y", "on"}
 
 
+# Parse integer env values with minimum bounds and default fallback.
+def parse_int_env(name: str, default: int, minimum: int = 0) -> int:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    try:
+        value = int(raw)
+    except ValueError:
+        return default
+    return max(minimum, value)
+
+
+# Resolve host for local services across host and container contexts.
 def default_local_service_host() -> str:
     configured = os.getenv("LOCAL_SERVICES_HOST")
     if configured:
@@ -29,6 +43,7 @@ def default_local_service_host() -> str:
     return "localhost"
 
 
+# Build default RustFS endpoint from the local service host.
 def default_rustfs_endpoint() -> str:
     return f"http://{default_local_service_host()}:9000"
 
@@ -43,20 +58,28 @@ class RabbitMQ:
     queue: str
     prefetch: int
     requeue_on_error: bool
+    reconnect_initial_delay_seconds: int
+    reconnect_max_delay_seconds: int
 
+    # Load RabbitMQ settings from environment variables.
     @classmethod
     def from_env(cls) -> "RabbitMQ":
         return cls(
             host=os.getenv("RABBITMQ_HOST", default_local_service_host()),
-            port=int(os.getenv("RABBITMQ_PORT", "5672")),
+            port=parse_int_env("RABBITMQ_PORT", 5672, minimum=1),
             user=os.getenv("RABBITMQ_USER", "guest"),
             password=os.getenv("RABBITMQ_PASSWORD", "guest"),
             vhost=os.getenv("RABBITMQ_VHOST", "/"),
             queue=os.getenv("RABBITMQ_QUEUE", "scan_jobs"),
-            prefetch=int(os.getenv("RABBITMQ_PREFETCH", "1")),
+            prefetch=parse_int_env("RABBITMQ_PREFETCH", 1, minimum=1),
             requeue_on_error=parse_bool_env("RABBITMQ_REQUEUE_ON_ERROR", False),
+            reconnect_initial_delay_seconds=parse_int_env(
+                "RABBITMQ_RECONNECT_INITIAL_DELAY_SECONDS", 2, minimum=1
+            ),
+            reconnect_max_delay_seconds=parse_int_env("RABBITMQ_RECONNECT_MAX_DELAY_SECONDS", 30, minimum=1),
         )
 
+    # Build pika connection parameters from configured credentials.
     def connection_parameters(self) -> pika.ConnectionParameters:
         return pika.ConnectionParameters(
             host=self.host,
@@ -65,6 +88,7 @@ class RabbitMQ:
             credentials=pika.PlainCredentials(self.user, self.password),
         )
 
+    # Open a blocking RabbitMQ connection.
     def connect(self) -> pika.BlockingConnection:
         return pika.BlockingConnection(self.connection_parameters())
 
@@ -77,6 +101,7 @@ class Postgres:
     password: str
     database: str
 
+    # Load Postgres settings from environment variables.
     @classmethod
     def from_env(cls) -> "Postgres":
         return cls(
@@ -87,6 +112,7 @@ class Postgres:
             database=os.getenv("POSTGRES_DB", "vulnsentinel"),
         )
 
+    # Build SQLAlchemy URL for psycopg2.
     def sqlalchemy_url(self) -> URL:
         return URL.create(
             "postgresql+psycopg2",
@@ -97,6 +123,7 @@ class Postgres:
             database=self.database,
         )
 
+    # Create SQLAlchemy engine with stale-connection protection.
     def create_engine(self) -> Engine:
         return create_engine(self.sqlalchemy_url(), pool_pre_ping=True)
 
@@ -111,6 +138,7 @@ class RustFS:
     auto_create_bucket: bool
     _client: Any = field(init=False, repr=False)
 
+    # Load RustFS/S3 settings from environment variables.
     @classmethod
     def from_env(cls) -> "RustFS":
         return cls(
@@ -122,6 +150,7 @@ class RustFS:
             auto_create_bucket=parse_bool_env("RUSTFS_AUTO_CREATE_BUCKET", True),
         )
 
+    # Initialize S3 client and optionally ensure bucket existence.
     def __post_init__(self) -> None:
         self._client = boto3.client(
             "s3",
@@ -134,6 +163,7 @@ class RustFS:
         if self.auto_create_bucket:
             self.ensure_bucket()
 
+    # Create the bucket if it does not already exist.
     def ensure_bucket(self) -> None:
         try:
             self._client.head_bucket(Bucket=self.bucket)
@@ -144,6 +174,7 @@ class RustFS:
             else:
                 raise
 
+    # Return whether an object key exists in the configured bucket.
     def exists(self, key: str) -> bool:
         try:
             self._client.head_object(Bucket=self.bucket, Key=key)
@@ -154,10 +185,12 @@ class RustFS:
                 return False
             raise
 
+    # Download object bytes for a key.
     def get_bytes(self, key: str) -> bytes:
         response = self._client.get_object(Bucket=self.bucket, Key=key)
         return response["Body"].read()
 
+    # Upload object bytes with content type metadata.
     def put_bytes(self, key: str, data: bytes, content_type: str) -> None:
         self._client.put_object(
             Bucket=self.bucket,

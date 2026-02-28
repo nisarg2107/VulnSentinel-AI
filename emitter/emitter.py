@@ -3,14 +3,15 @@
 
 import argparse
 import datetime as dt
-import hashlib
 import json
 import os
+import subprocess
 import uuid
 
 import pika
 
 
+# Parse flexible CLI booleans like true/false and yes/no.
 def parse_bool(value: str) -> bool:
     normalized = value.strip().lower()
     if normalized in {"1", "true", "yes", "y"}:
@@ -20,6 +21,7 @@ def parse_bool(value: str) -> bool:
     raise argparse.ArgumentTypeError(f"Invalid boolean value: {value}")
 
 
+# Validate digest format as sha256:<64-hex>.
 def is_sha256_digest(value: str) -> bool:
     if not value.startswith("sha256:"):
         return False
@@ -27,6 +29,7 @@ def is_sha256_digest(value: str) -> bool:
     return len(digest_hex) == 64 and all(c in "0123456789abcdef" for c in digest_hex.lower())
 
 
+# Resolve host for local services across host and container contexts.
 def default_local_service_host() -> str:
     configured = os.getenv("LOCAL_SERVICES_HOST")
     if configured:
@@ -36,6 +39,41 @@ def default_local_service_host() -> str:
     return "localhost"
 
 
+# Resolve a real immutable digest from local docker metadata.
+def resolve_digest_from_docker(image_ref: str) -> str:
+    command = ["docker", "image", "inspect", image_ref, "--format", "{{json .RepoDigests}}"]
+    try:
+        result = subprocess.run(command, check=True, capture_output=True, text=True)
+    except FileNotFoundError as exc:
+        raise ValueError("docker CLI not found; provide --image-digest explicitly") from exc
+    except subprocess.CalledProcessError as exc:
+        stderr = (exc.stderr or "").strip()
+        details = f": {stderr}" if stderr else ""
+        raise ValueError(f"docker image inspect failed for '{image_ref}'{details}") from exc
+
+    try:
+        repo_digests = json.loads(result.stdout.strip() or "[]")
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"Unable to parse docker inspect output for '{image_ref}'") from exc
+
+    if not isinstance(repo_digests, list):
+        raise ValueError(f"No RepoDigests found for '{image_ref}'")
+
+    for entry in repo_digests:
+        if not isinstance(entry, str):
+            continue
+        if "@sha256:" in entry:
+            digest = entry.split("@", 1)[1]
+            if is_sha256_digest(digest):
+                return digest
+
+    raise ValueError(
+        f"No immutable sha256 digest found for '{image_ref}'. "
+        "Pull the image first or pass --image-digest."
+    )
+
+
+# Normalize image_ref and digest while enforcing immutable digest identity.
 def resolve_image_fields(image_ref: str, image_digest: str | None) -> tuple[str, str]:
     digest_from_ref = None
     if "@sha256:" in image_ref:
@@ -46,7 +84,7 @@ def resolve_image_fields(image_ref: str, image_digest: str | None) -> tuple[str,
     elif digest_from_ref:
         digest = digest_from_ref
     else:
-        digest = "sha256:" + hashlib.sha256(image_ref.encode("utf-8")).hexdigest()
+        digest = resolve_digest_from_docker(image_ref)
 
     if not is_sha256_digest(digest):
         raise ValueError("image_digest must be a valid sha256 digest (sha256:<64-hex>)")
@@ -59,6 +97,7 @@ def resolve_image_fields(image_ref: str, image_digest: str | None) -> tuple[str,
     return full_ref, digest
 
 
+# Build CLI parser for test job emission.
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Publish a scan job message to RabbitMQ")
 
@@ -67,12 +106,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--image",
         dest="image_ref",
         required=True,
-        help="Container image reference. If digest is missing, it will be appended.",
+        help="Container image reference. If digest is missing, it must be resolvable via docker inspect.",
     )
     parser.add_argument(
         "--image-digest",
         default=None,
-        help="Optional explicit digest in format sha256:<64-hex>",
+        help="Optional explicit immutable digest in format sha256:<64-hex>",
     )
     parser.add_argument(
         "--environment",
@@ -107,10 +146,15 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+# Create and publish one durable scan job message.
 def main() -> int:
     args = build_parser().parse_args()
 
-    image_ref, image_digest = resolve_image_fields(args.image_ref, args.image_digest)
+    try:
+        image_ref, image_digest = resolve_image_fields(args.image_ref, args.image_digest)
+    except ValueError as exc:
+        print(f"Error: {exc}")
+        return 2
 
     payload = {
         "job_id": str(uuid.uuid4()),
