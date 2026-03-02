@@ -13,6 +13,9 @@
 - [x] Implement context-aware VEX rule (critical + not exposed => downgraded and suppressed).
 - [x] Persist per-scan metadata and deduplicated findings in PostgreSQL.
 - [x] Validate happy flow (Emitter -> Queue -> Worker -> DB -> RustFS).
+- [x] Add local Kubernetes autoscaling profile (kind + KEDA) with worker pod scaling based on RabbitMQ queue depth.
+- [x] Add autoscaling manifests (`k8s/`) and burst test script (`scripts/test_scale.ps1`).
+- [x] Document autoscaling setup and run flow in `docs/autoscaling-kind.md`.
 
 ## Remaining Work
 

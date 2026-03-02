@@ -4,10 +4,11 @@ VulnSentinel AI is a local-only, enterprise-grade vulnerability management pipel
 
 ## Current Status
 
-- **Phase:** MVP Core + Deferred Hardening Complete / Frontend Pending
+- **Phase:** MVP Core + Deferred Hardening Complete + kind/KEDA Autoscaling Demo Added / Frontend Pending
 - **Infrastructure:** Native Host OS Installations (PostgreSQL, RabbitMQ) + RustFS in Docker
 - **Alternative Infra Path:** Standalone Docker Compose files for PostgreSQL and RabbitMQ are available in repo root.
-- **Compute:** Plain Docker containers (No Kubernetes for MVP)
+- **Compute (Baseline):** Plain Docker containers
+- **Compute (Autoscaling Demo):** kind Kubernetes + KEDA worker autoscaling
 - **Backend:** Worker + emitter implemented and verified in happy flow
 - **Worker Codebase:** Flat, readable layout in `worker/` with `orchestrator.py` as the startup entrypoint and split infra/syft/grype/vex/db modules.
 - **Data Model:** `assets`, `scans`, and `scan_results` in Postgres with OpenVEX-aligned statuses
@@ -35,7 +36,7 @@ VulnSentinel AI is a local-only, enterprise-grade vulnerability management pipel
 
 ## Next Tasks
 
-1. Continue validating repeated happy-flow runs with different images and contexts.
+1. Validate kind/KEDA autoscaling flow repeatedly with varying burst sizes and queue thresholds.
 2. Build the frontend (Next.js + shadcn) for actionable risk views.
 3. Continue hardening validation runs (disconnect/reconnect, artifact repair, strict digest emit).
 

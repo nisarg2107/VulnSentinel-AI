@@ -207,3 +207,16 @@ To switch theme per user in UI:
 1. Login to Grafana.
 2. Open your user profile/preferences.
 3. Set Theme to `Light`, `Dark`, or `System`.
+
+## 8. Kubernetes Autoscaling (kind + KEDA)
+
+For the local autoscaling profile (fixed kind nodes + autoscaled worker pods), use:
+
+- [docs/autoscaling-kind.md](docs/autoscaling-kind.md)
+
+This includes:
+
+- `kind` cluster creation (`1` control-plane + `2` workers)
+- KEDA install
+- Kubernetes manifests under `k8s/`
+- `50`-message burst test via `scripts/test_scale.ps1`

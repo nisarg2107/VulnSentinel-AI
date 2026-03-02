@@ -22,6 +22,8 @@
    - Provisioned PostgreSQL datasource and starter dashboard JSON.
 6. **Vulnerability Feed**
    - Vunnel local sync strategy (external to worker runtime).
+7. **Autoscaler (Optional K8s Profile)**
+   - KEDA ScaledObject can autoscale worker pods based on RabbitMQ `scan_jobs` queue depth.
 
 ## Data Flow (The Happy Path)
 
@@ -43,14 +45,18 @@
 
 ## Deployment Model (Current MVP)
 
-- **Orchestration:** Plain Docker containers, no Kubernetes in MVP.
+- **Baseline Orchestration:** Plain Docker containers.
+- **Autoscaling Demo Profile:** `kind` cluster + KEDA for worker pod autoscaling.
 - **Networking:** Dockerized apps connect to host services via `host.docker.internal`.
 - **Infra Startup Options:** RabbitMQ/PostgreSQL can be started natively or via standalone Docker Compose files.
 - **Worker Concurrency:** RabbitMQ prefetch controls parallelism per consumer.
+- **K8s Scope:** Static single-replica infra services with autoscaled worker deployment for local proof-of-scale.
+- **K8s Scope:** Static single-replica infra services (RabbitMQ/Postgres/RustFS/Grafana) with autoscaled worker deployment for local proof-of-scale.
 - **Deduplication:** PostgreSQL uniqueness constraints in `scan_results` for per-scan finding identity.
 - **Schema Management:** Alembic migrations under `worker/alembic` (with `init.sql` retained as bootstrap fallback).
 - **Alembic File Guide:** `docs/alembic.md` explains what each Alembic file does.
 - **Runtime Data Policy:** `volumes/` contains local runtime state for Grafana and RustFS and is excluded from Git; only source configs and dashboard definitions are version-controlled.
+- **Autoscaling Guide:** `docs/autoscaling-kind.md` provides full setup, KEDA config, and burst test flow.
 
 ## Deferred Hardening (Implemented)
 

@@ -1,0 +1,20 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: worker-rabbitmq-scaler
+  namespace: vulnsentinel
+spec:
+  scaleTargetRef:
+    name: worker
+  pollingInterval: 5
+  cooldownPeriod: 60
+  minReplicaCount: 1
+  maxReplicaCount: 6
+  triggers:
+    - type: rabbitmq
+      metadata:
+        protocol: auto
+        mode: QueueLength
+        queueName: scan_jobs
+        value: "1"
+        hostFromEnv: RABBITMQ_URL

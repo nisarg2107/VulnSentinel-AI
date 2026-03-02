@@ -1,0 +1,60 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: __JOB_NAME__
+  namespace: __NAMESPACE__
+spec:
+  ttlSecondsAfterFinished: 1800
+  backoffLimit: 1
+  template:
+    metadata:
+      labels:
+        app: emitter-burst
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: emitter-burst
+          image: vuln-emitter:local
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - |
+              i=1
+              while [ "$i" -le "$BURST_COUNT" ]; do
+                python /app/emitter.py \
+                  --image-ref "$IMAGE_REF" \
+                  --environment "$EMITTER_ENVIRONMENT" \
+                  --is-exposed-public "$EMITTER_EXPOSED_PUBLIC" \
+                  --is-privileged "$EMITTER_IS_PRIVILEGED" \
+                  --rabbitmq-host "$RABBITMQ_HOST" \
+                  --rabbitmq-port "$RABBITMQ_PORT" \
+                  --rabbitmq-user "$RABBITMQ_USER" \
+                  --rabbitmq-password "$RABBITMQ_PASSWORD" \
+                  --rabbitmq-vhost "$RABBITMQ_VHOST" \
+                  --queue "$RABBITMQ_QUEUE"
+                i=$((i+1))
+              done
+          env:
+            - name: BURST_COUNT
+              value: "__BURST_COUNT__"
+            - name: IMAGE_REF
+              value: "__IMAGE_REF__"
+            - name: EMITTER_ENVIRONMENT
+              value: kind-burst-test
+            - name: EMITTER_EXPOSED_PUBLIC
+              value: "true"
+            - name: EMITTER_IS_PRIVILEGED
+              value: "false"
+            - name: RABBITMQ_HOST
+              value: rabbitmq
+            - name: RABBITMQ_PORT
+              value: "5672"
+            - name: RABBITMQ_USER
+              value: guest
+            - name: RABBITMQ_PASSWORD
+              value: guest
+            - name: RABBITMQ_VHOST
+              value: /
+            - name: RABBITMQ_QUEUE
+              value: scan_jobs

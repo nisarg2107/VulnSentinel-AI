@@ -1,0 +1,60 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: emitter-nightly
+  namespace: vulnsentinel
+spec:
+  schedule: "0 2 * * *"
+  suspend: true
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        metadata:
+          labels:
+            app: emitter-nightly
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: emitter
+              image: vuln-emitter:local
+              imagePullPolicy: IfNotPresent
+              command:
+                - sh
+                - -c
+                - >
+                  python /app/emitter.py
+                  --image-ref "${EMITTER_IMAGE_REF}"
+                  --environment "${EMITTER_ENVIRONMENT}"
+                  --is-exposed-public "${EMITTER_EXPOSED_PUBLIC}"
+                  --is-privileged "${EMITTER_IS_PRIVILEGED}"
+                  --rabbitmq-host "${RABBITMQ_HOST}"
+                  --rabbitmq-port "${RABBITMQ_PORT}"
+                  --rabbitmq-user "${RABBITMQ_USER}"
+                  --rabbitmq-password "${RABBITMQ_PASSWORD}"
+                  --rabbitmq-vhost "${RABBITMQ_VHOST}"
+                  --queue "${RABBITMQ_QUEUE}"
+              env:
+                - name: EMITTER_IMAGE_REF
+                  value: docker.io/library/nginx@sha256:0000000000000000000000000000000000000000000000000000000000000000
+                - name: EMITTER_ENVIRONMENT
+                  value: kind-nightly
+                - name: EMITTER_EXPOSED_PUBLIC
+                  value: "true"
+                - name: EMITTER_IS_PRIVILEGED
+                  value: "false"
+                - name: RABBITMQ_HOST
+                  value: rabbitmq
+                - name: RABBITMQ_PORT
+                  value: "5672"
+                - name: RABBITMQ_USER
+                  value: guest
+                - name: RABBITMQ_PASSWORD
+                  value: guest
+                - name: RABBITMQ_VHOST
+                  value: /
+                - name: RABBITMQ_QUEUE
+                  value: scan_jobs
