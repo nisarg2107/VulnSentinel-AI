@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+  namespace: vulnsentinel
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: worker
+  template:
+    metadata:
+      labels:
+        app: worker
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: worker
+          image: vuln-worker:local
+          imagePullPolicy: IfNotPresent
+          command:
+            - python
+            - /app/orchestrator.py
+          env:
+            - name: LOG_LEVEL
+              value: INFO
+            - name: POSTGRES_HOST
+              value: postgres
+            - name: POSTGRES_PORT
+              value: "5432"
+            - name: POSTGRES_USER
+              value: postgres
+            - name: POSTGRES_PASSWORD
+              value: postgres
+            - name: POSTGRES_DB
+              value: vulnsentinel
+            - name: RABBITMQ_HOST
+              value: rabbitmq
+            - name: RABBITMQ_PORT
+              value: "5672"
+            - name: RABBITMQ_USER
+              value: guest
+            - name: RABBITMQ_PASSWORD
+              value: guest
+            - name: RABBITMQ_VHOST
+              value: /
+            - name: RABBITMQ_QUEUE
+              value: scan_jobs
+            - name: RABBITMQ_PREFETCH
+              value: "1"
+            - name: RABBITMQ_REQUEUE_ON_ERROR
+              value: "false"
+            - name: RABBITMQ_RECONNECT_INITIAL_DELAY_SECONDS
+              value: "2"
+            - name: RABBITMQ_RECONNECT_MAX_DELAY_SECONDS
+              value: "30"
+            - name: RABBITMQ_URL
+              value: amqp://guest:guest@rabbitmq.vulnsentinel.svc.cluster.local:5672/%2F
+            - name: RUSTFS_ENDPOINT
+              value: http://rustfs:9000
+            - name: RUSTFS_ACCESS_KEY
+              value: rustfsadmin
+            - name: RUSTFS_SECRET_KEY
+              value: rustfsadmin
+            - name: RUSTFS_REGION
+              value: us-east-1
+            - name: RUSTFS_BUCKET
+              value: sboms
+            - name: RUSTFS_AUTO_CREATE_BUCKET
+              value: "true"
+            - name: ARTIFACT_INTEGRITY_CHECK_ON_START
+              value: "false"
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 2Gi

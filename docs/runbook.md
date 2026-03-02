@@ -111,6 +111,9 @@ docker run -d --name worker-1 --add-host host.docker.internal:host-gateway `
   -e RABBITMQ_VHOST=/ `
   -e RABBITMQ_QUEUE=scan_jobs `
   -e RABBITMQ_REQUEUE_ON_ERROR=false `
+  -e RABBITMQ_RECONNECT_INITIAL_DELAY_SECONDS=2 `
+  -e RABBITMQ_RECONNECT_MAX_DELAY_SECONDS=30 `
+  -e ARTIFACT_INTEGRITY_CHECK_ON_START=false `
   vuln-worker
 ```
 
@@ -121,6 +124,12 @@ docker pull nginx:latest
 $imgRef = docker image inspect nginx:latest --format '{{index .RepoDigests 0}}'
 docker run --rm --add-host host.docker.internal:host-gateway vuln-emitter --image-ref $imgRef --is-exposed-public true
 ```
+
+Digest behavior:
+
+- Emitter now requires immutable digest identity.
+- If `--image-ref` has no digest and `--image-digest` is not passed, emitter tries `docker image inspect` to resolve one.
+- If digest cannot be resolved, the emit command fails.
 
 ## 6. Validate Happy Flow
 
@@ -156,6 +165,19 @@ ORDER BY scan_id DESC
 LIMIT 5;
 ```
 
+Optional artifact integrity pass (on-demand):
+
+```powershell
+cd .\worker
+python .\orchestrator.py --artifact-integrity-check-only --artifact-integrity-limit 500
+cd ..
+```
+
+Exit code:
+
+- `0`: all checked scans were healthy or repaired.
+- `1`: one or more scans remain `repair_required`.
+
 ## 7. Grafana
 
 Use `docs/grafana-blueprint.md` for panel layout and query templates aligned with OpenVEX statuses.
@@ -185,3 +207,16 @@ To switch theme per user in UI:
 1. Login to Grafana.
 2. Open your user profile/preferences.
 3. Set Theme to `Light`, `Dark`, or `System`.
+
+## 8. Kubernetes Autoscaling (kind + KEDA)
+
+For the local autoscaling profile (fixed kind nodes + autoscaled worker pods), use:
+
+- [docs/autoscaling-kind.md](docs/autoscaling-kind.md)
+
+This includes:
+
+- `kind` cluster creation (`1` control-plane + `2` workers)
+- KEDA install
+- Kubernetes manifests under `k8s/`
+- `50`-message burst test via `scripts/test_scale.ps1`

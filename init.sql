@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS scans (
     report_sha256 TEXT NULL,
     report_bytes BIGINT NULL,
     CONSTRAINT scans_status_chk
-        CHECK (status IN ('queued', 'running', 'completed', 'failed', 'cancelled')),
+        CHECK (status IN ('queued', 'running', 'completed', 'failed', 'cancelled', 'repair_required')),
     CONSTRAINT scans_finished_after_started_chk
         CHECK (finished_at IS NULL OR finished_at >= started_at),
     CONSTRAINT scans_sbom_sha256_chk

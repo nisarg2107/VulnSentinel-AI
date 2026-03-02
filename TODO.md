@@ -13,6 +13,9 @@
 - [x] Implement context-aware VEX rule (critical + not exposed => downgraded and suppressed).
 - [x] Persist per-scan metadata and deduplicated findings in PostgreSQL.
 - [x] Validate happy flow (Emitter -> Queue -> Worker -> DB -> RustFS).
+- [x] Add local Kubernetes autoscaling profile (kind + KEDA) with worker pod scaling based on RabbitMQ queue depth.
+- [x] Add autoscaling manifests (`k8s/`) and burst test script (`scripts/test_scale.ps1`).
+- [x] Document autoscaling setup and run flow in `docs/autoscaling-kind.md`.
 
 ## Remaining Work
 
@@ -22,8 +25,8 @@
 
 ## Deferred Until End Of Project
 
-- [ ] Implement deferred hardening backlog in [docs/deferred-hardening.md](docs/deferred-hardening.md):
-- [ ] Worker ACK/NACK safety and reconnect loop for broker disconnects.
-- [ ] Artifact integrity checker and repair policy (DB object keys vs RustFS objects).
-- [ ] Emitter digest strictness (require explicit digest or resolve from Docker inspect).
+- [x] Implement deferred hardening backlog in [docs/deferred-hardening.md](docs/deferred-hardening.md):
+- [x] Worker ACK/NACK safety and reconnect loop for broker disconnects.
+- [x] Artifact integrity checker and repair policy (DB object keys vs RustFS objects).
+- [x] Emitter digest strictness (require explicit digest or resolve from Docker inspect).
 

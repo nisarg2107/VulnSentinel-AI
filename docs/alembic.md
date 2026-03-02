@@ -40,6 +40,11 @@ This folder is the migration workspace.
 - Creates core tables (`assets`, `scans`, `scan_results`), constraints, indexes, and trigger/function used by scanning flow.
 - `downgrade()` removes those DB objects in reverse.
 
+### `worker/alembic/versions/20260228_0002_scan_repair_required_status.py`
+
+- Hardening migration that extends `scans.status` to include `repair_required`.
+- Supports artifact integrity repair workflow where unrecoverable scans are explicitly marked for follow-up.
+
 ## Common commands
 
 Run from `worker/`:
